@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+C:/ESP/projects/project-atv1-gpio/build/CMakeFiles/bootloader
+C:/ESP/projects/project-atv1-gpio/build/CMakeFiles/bootloader.rule
+C:/ESP/projects/project-atv1-gpio/build/CMakeFiles/bootloader-complete.rule
+C:/ESP/projects/project-atv1-gpio/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+C:/ESP/projects/project-atv1-gpio/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+C:/ESP/projects/project-atv1-gpio/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+C:/ESP/projects/project-atv1-gpio/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+C:/ESP/projects/project-atv1-gpio/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+C:/ESP/projects/project-atv1-gpio/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+C:/ESP/projects/project-atv1-gpio/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
