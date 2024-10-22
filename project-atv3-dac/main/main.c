@@ -1,22 +1,29 @@
 
 #include <stdio.h>
+#include <math.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/dac_oneshot.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
 
-#define BUTTON_PIN1 14    //GPIO32
+#define BUTTON_PIN1 36    //GPIO32
 #define BUTTON_PIN2 35    //GPIO35
 #define BUTTON_PIN3 34    //GPIO34
 
 
-static const char *TAG = "dac_oneshot_example";     
+static const char *TAG = "dac_example";     
 
 void app_main(void)
 {
-    uint32_t val = 0;         
+    uint32_t val = 0;
+    uint32_t output = 0;
+    double resolucao = 255.0;         
     
+    int valor_b1 = 0;
+    int valor_b2 = 0;
+    int valor_b3 = 0; 
+
     //configure button_PIN GPIO as input
     gpio_reset_pin(BUTTON_PIN1);                         //reset pin and set as GPIO
     gpio_set_direction(BUTTON_PIN1, GPIO_MODE_INPUT);    //set BUTTON_PIN as input
@@ -41,23 +48,80 @@ void app_main(void)
     ESP_LOGI(TAG, "DAC oneshot example start.");                            
 
    while(1){
-
+        
         
         // Criando uma rampa - inclinacao positiva
-        for(val = 0;val<255;val++){
-            ESP_ERROR_CHECK(dac_oneshot_output_voltage(chan0_handle, val));
+        for(val = 0; val<resolucao; val++){
+            // ESP_ERROR_CHECK(dac_oneshot_output_voltage(chan0_handle, val));
             // int valor = val;
             // ESP_LOGI(TAG, "VAL: %d", valor);
 
+            double valor_normalizado = val/resolucao;
+            
+            double rampa = valor_normalizado;
+            double rad = 2.0 * M_PI * valor_normalizado;
+            double seno = 0.5 + sin(rad)/2;
+            double quadrada = 0.0;
+            if (valor_normalizado > 0.50){
+                quadrada = 1.0;
+            }else{
+                quadrada = 0.0;
+            }
+            double triangular = 0.0;
+            if (valor_normalizado > 0.50){
+                triangular = 0.5 + (1-valor_normalizado);
+            }else{
+                triangular = 0.5 + valor_normalizado ;
+            }
+            
             // FAZ A LEITURA DOS BOTOES
             int read_bt1 = gpio_get_level(BUTTON_PIN1);   //read button state and save in new_state variable
             int read_bt2 = gpio_get_level(BUTTON_PIN2);   //read button state and save in new_state variable
             int read_bt3 = gpio_get_level(BUTTON_PIN3);   //read button state and save in new_state variable
             
-            ESP_LOGI(TAG, "BTs: %d  %d  %d", read_bt1, read_bt2, read_bt3);
+            if (read_bt1){
+                valor_b1 = 1 + valor_b1;
+            }
+            else{
+                if (valor_b1 >=4){
+                    valor_b1 = 0;
+                }
+            }
+            if (read_bt2){
+                valor_b2 = 1 + valor_b2;
+            }else{
+                if (valor_b2 >=4){
+                    valor_b2 = 0;
+                }
+            }
+            if (read_bt3){
+                valor_b3 = 1 + valor_b2;
+            }else{
+                if (valor_b3 >=4){
+                    valor_b3 = 0;
+                }
+            }
 
+            switch (valor_b1) {
+                case 1:
+                    output = quadrada*255;
+                    break;
+                case 2:
+                    output = seno*255;
+                    break;
+                case 3:
+                    output = triangular*255;
+                    break;
+                default:
+                    break;
+    }
 
-            vTaskDelay(pdMS_TO_TICKS(100));
+            ESP_LOGI(TAG, "BTs: %d  %d  %d | ramp: %.5f | seno: %.5f | quad: %.5f | triang: %.5f | V1: %d", read_bt1, read_bt2, read_bt3, rampa, seno, quadrada, triangular, valor_b1);
+            
+
+            ESP_ERROR_CHECK(dac_oneshot_output_voltage(chan0_handle, output));
+
+            vTaskDelay(pdMS_TO_TICKS(50));
         }
         /*
             Terminar as lógicas para geração das ondas
