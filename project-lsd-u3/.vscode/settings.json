@@ -1,0 +1,16 @@
+{
+    "C_Cpp.intelliSenseEngine": "default",
+    "idf.espIdfPathWin": "c:\\ESP\\v5.3.1\\esp-idf",
+    "idf.openOcdConfigs": [
+        "board/esp32-wrover-kit-3.3v.cfg"
+    ],
+    "idf.portWin": "COM6",
+    "idf.toolsPathWin": "c:\\ESP\\.espressif",
+    "files.associations": {
+        "adc.h": "c",
+        "gpio.h": "c",
+        "adc_oneshot.h": "c",
+        "ledc.h": "c"
+    },
+    "idf.flashType": "UART"
+}
