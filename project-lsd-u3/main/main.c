@@ -7,38 +7,23 @@
 #include "esp_log.h"  // Biblioteca para logs
 #include "driver/ledc.h"
 #include "driver/gpio.h"
+#include "esp_timer.h"
 
 // Definir uma tag para os logs
 static const char *TAG = "ADC_EXAMPLE";
 
-#define LED_PIN 25     //GPIO25
-
 void app_main(void)
 {   
-    gpio_reset_pin(LED_PIN);                          //reset pin and set as GPIO
-    gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);   //set LED_PIN_1 as output
-
-    // CONFIGURA O TIMER E CANAL PARA O LED3
-    ledc_timer_config_t timer_conf = {
-            .speed_mode = LEDC_LOW_SPEED_MODE,
-            .timer_num = LEDC_TIMER_0,
-            .freq_hz = 60,
-            .duty_resolution = LEDC_TIMER_10_BIT,
-            .clk_cfg = LEDC_AUTO_CLK
-        };
-    ledc_timer_config(&timer_conf);
-    ledc_channel_config_t channel_config = {
-        .channel = LEDC_CHANNEL_1,
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_sel = LEDC_TIMER_0,
-        .intr_type = LEDC_INTR_DISABLE,
-        .gpio_num = LED_PIN,
-        .duty = 511
-    };    
-    ledc_channel_config(&channel_config);
 
     int adc_raw;  // Variável para armazenar o valor bruto do ADC
-    int new_duty;
+    int ldr_value;  
+    int pot_value;
+    int temp_value;
+
+    int64_t start_time;
+    int64_t step_time;
+
+    bool enable_ldr = false;
 
     // Configurações do ADC One-Shot
     adc_oneshot_unit_handle_t adc1_handle;
@@ -52,24 +37,38 @@ void app_main(void)
     // CONFIGURA O CANAL ADC
     adc_oneshot_chan_cfg_t config = {
         .bitwidth = ADC_BITWIDTH_DEFAULT,  // Resolução do ADC
-        .atten = ADC_ATTEN_DB_11,          // Atenuação de 11dB (para leitura de até ~3.6V)
+        .atten = ADC_ATTEN_DB_12,          // Atenuação de 11dB (para leitura de até ~3.6V)
     };
 
-    // CONFIGURA CANAL 6 DO ADC1
+    // CONFIGURA CANAL 6 DO ADC1 (GPIO 34)
     ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_6, &config));
+    // CONFIGURA CANAL 7 DO ADC1 (GPIO 35)
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_7, &config));
+    // CONFIGURA CANAL 3 DO ADC1 (GPIO 39)
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_4, &config));
 
     while (1)
     {
         // LE O CANAL
         ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, ADC_CHANNEL_6, &adc_raw));
+        ldr_value = adc_raw;
+        ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, ADC_CHANNEL_7, &adc_raw));
+        pot_value = adc_raw;
+        ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, ADC_CHANNEL_4, &adc_raw));
+        temp_value = adc_raw;
+        
+        if (ldr_value < 3000){
+            enable_ldr = true;
+        }
+        if (enable_ldr == true && ldr_value > 3000){
+                start_time = esp_timer_get_time();
+                ESP_LOGI(TAG, "TEMPO: %lld", start_time);
+                enable_ldr = false;
+        }
 
-        new_duty = (adc_raw * 1024) / 4096;
 
-        ESP_LOGI(TAG, "Valor bruto do ADC: %d, Duty: %d", adc_raw, new_duty);
+        ESP_LOGI(TAG, "Valor bruto do ADC: %d | %d | %d | %d", adc_raw, ldr_value, pot_value, temp_value);
 
-        ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, new_duty);
-        ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
-
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
