@@ -30,8 +30,12 @@ void app_main()
     esp_sleep_enable_gpio_wakeup();
 
     // Configurando o Sleep Timer (em microsegundos)
-    uint64_t tempo_sono = 2 * (60 * 1000000); // VALOR * (1 MINUTO)
+    // uint64_t tempo_sono = 2 * (60 * 1000000); // VALOR * (1 MINUTO)
+    uint64_t tempo_sono = (10 * 1000000); // VALOR * (1 MINUTO)
     esp_sleep_enable_timer_wakeup(tempo_sono);
+
+    int64_t sleep_time_ms = 0;
+    int64_t sleep_time_total = 0;
 
   while(true)
   {
@@ -47,16 +51,27 @@ void app_main()
     // Entra em modo Light Sleep
     esp_light_sleep_start();
     int64_t tempo_apos_acordar = esp_timer_get_time();
-    printf("Dormiu por %lld ms\n", (tempo_apos_acordar - tempo_antes_de_dormir) / 1000);
+    
+    sleep_time_ms = (tempo_apos_acordar - tempo_antes_de_dormir) / 1000;
+    sleep_time_total += sleep_time_ms;
+    
+    printf("Dormiu por %lld ms\n", sleep_time_ms);
     
     // Pega a causa
     esp_sleep_wakeup_cause_t causa = esp_sleep_get_wakeup_cause();
 
     if (causa == ESP_SLEEP_WAKEUP_TIMER){
-        printf("FAZ A MEDIDA E SALVA LOCAL\n");
+        printf("FAZ A MEDIDA E SALVA LOCAL\n");   
     }else{
         printf("SOBRE O SERVIDOR HTTP\n");
     }
+
+    printf("Sono total %lld ms\n", sleep_time_total);
+    if (sleep_time_total >= 40000){
+        printf("MANDA PRA O MQTT \n");
+        sleep_time_total = 0;
+    }
+
   }
 
 }
